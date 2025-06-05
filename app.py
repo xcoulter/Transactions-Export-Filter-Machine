@@ -107,30 +107,36 @@ elif selected_page == "Balances":
         df = pd.read_csv(uploaded_file)
         st.success("CSV file loaded successfully.")
 
-        # Normalize values
-        df["assetAmount"] = df["assetAmount"].abs()
-        df["feeAmount"] = df["feeAmount"].abs()
+        # Try to detect the date column
+        date_col = next((col for col in df.columns if "date" in col.lower()), None)
+        if not date_col:
+            st.error("No date column found in the uploaded file.")
+        else:
+            # Normalize values
+            df["assetAmount"] = df["assetAmount"].abs()
+            df["feeAmount"] = df["feeAmount"].abs()
 
-        # Parse date
-        df["date"] = pd.to_datetime(df["date"], errors="coerce")
-        df["month"] = df["date"].dt.month
-        df["year"] = df["date"].dt.year
+            # Parse date
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+            df = df.dropna(subset=[date_col])
+            df["month"] = df[date_col].dt.month
+            df["year"] = df[date_col].dt.year
 
-        # Asset transactions
-        asset_df = df[df["operation"].isin(["DEPOSIT", "WITHDRAW"])].copy()
-        asset_df["direction"] = asset_df["operation"].apply(lambda x: 1 if x == "DEPOSIT" else -1)
-        asset_df["asset_balance"] = asset_df["assetAmount"] * asset_df["direction"]
-        asset_df = asset_df[["walletName", "asset", "asset_balance", "date", "month", "year"]].rename(columns={"asset_balance": "amount"})
+            # Asset transactions
+            asset_df = df[df["operation"].isin(["DEPOSIT", "WITHDRAW"])].copy()
+            asset_df["direction"] = asset_df["operation"].apply(lambda x: 1 if x == "DEPOSIT" else -1)
+            asset_df["asset_balance"] = asset_df["assetAmount"] * asset_df["direction"]
+            asset_df = asset_df[["walletName", "asset", "asset_balance", date_col, "month", "year"]].rename(columns={"asset_balance": "amount"})
 
-        # Fee transactions
-        fee_df = df[df["operation"] == "FEE"].copy()
-        fee_df["fee_balance"] = -fee_df["feeAmount"]
-        fee_df = fee_df[["walletName", "feeAsset", "fee_balance", "date", "month", "year"]].rename(columns={"feeAsset": "asset", "fee_balance": "amount"})
+            # Fee transactions
+            fee_df = df[df["operation"] == "FEE"].copy()
+            fee_df["fee_balance"] = -fee_df["feeAmount"]
+            fee_df = fee_df[["walletName", "feeAsset", "fee_balance", date_col, "month", "year"]].rename(columns={"feeAsset": "asset", "fee_balance": "amount"})
 
-        # Combine
-        combined = pd.concat([asset_df, fee_df], ignore_index=True)
+            # Combine
+            combined = pd.concat([asset_df, fee_df], ignore_index=True)
 
-        # Group and summarize
-        balances = combined.groupby(["walletName", "asset", "year", "month"])["amount"].sum().reset_index()
+            # Group and summarize
+            balances = combined.groupby(["walletName", "asset", "year", "month"])["amount"].sum().reset_index()
 
-        st.dataframe(balances, use_container_width=True)
+            st.dataframe(balances, use_container_width=True)
