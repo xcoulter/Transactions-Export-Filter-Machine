@@ -8,6 +8,7 @@ st.title("📊 Transactions Report Analyser")
 # Page selector
 st.markdown("##")
 pages = {
+    "Home": "home",
     "Report Filtering": "filtering",
     # future pages can be added here
 }
