@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import calendar
 
 st.set_page_config(page_title="Transactions Report Analyser", layout="wide")
 st.title("📊 Transactions Report Analyser")
@@ -119,22 +120,33 @@ elif selected_page == "Balances":
             df = df.dropna(subset=["dateTime"])
             df["month"] = df["dateTime"].dt.month
             df["year"] = df["dateTime"].dt.year
+            df["month_name"] = df["dateTime"].dt.strftime("%B")
 
             # Asset transactions
             asset_df = df[df["operation"].isin(["DEPOSIT", "WITHDRAW"])].copy()
             asset_df["direction"] = asset_df["operation"].apply(lambda x: 1 if x == "DEPOSIT" else -1)
             asset_df["amount"] = asset_df["assetAmount"] * asset_df["direction"]
-            asset_df = asset_df[["walletName", "assetTicker", "amount", "month", "year"]].rename(columns={"assetTicker": "asset"})
+            asset_df = asset_df[["walletName", "assetTicker", "amount", "month", "year", "month_name"]].rename(columns={"assetTicker": "asset"})
 
             # Fee transactions
             fee_df = df[df["operation"] == "FEE"].copy()
             fee_df["amount"] = -fee_df["feeAmount"]
-            fee_df = fee_df[["walletName", "feeAsset", "amount", "month", "year"]].rename(columns={"feeAsset": "asset"})
+            fee_df = fee_df[["walletName", "feeAsset", "amount", "month", "year", "month_name"]].rename(columns={"feeAsset": "asset"})
 
             # Combine
             combined = pd.concat([asset_df, fee_df], ignore_index=True)
 
+            # Dropdown filters
+            unique_years = combined["year"].sort_values().unique()
+            selected_year = st.selectbox("Select Year", unique_years)
+
+            available_months = combined[combined["year"] == selected_year][["month", "month_name"]].drop_duplicates().sort_values("month")
+            month_map = dict(zip(available_months["month"], available_months["month_name"]))
+            selected_month_num = st.selectbox("Select Month", list(month_map.keys()), format_func=lambda x: month_map[x])
+
+            filtered_combined = combined[(combined["year"] == selected_year) & (combined["month"] == selected_month_num)]
+
             # Group and summarize
-            balances = combined.groupby(["walletName", "asset", "year", "month"])["amount"].sum().reset_index()
+            balances = filtered_combined.groupby(["walletName", "asset", "year", "month"])["amount"].sum().reset_index()
 
             st.dataframe(balances, use_container_width=True)
