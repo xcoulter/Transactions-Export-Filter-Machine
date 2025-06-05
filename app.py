@@ -15,9 +15,20 @@ if uploaded_file:
     st.subheader("📋 Available Filters")
     filters = {}
 
+    # Define target keywords to match
+    filter_keywords = ["wallet", "asset", "categorisation", "operation", "type"]
+
+    # Map detected columns based on keyword presence
+    matched_columns = []
+    for col in df.columns:
+        for keyword in filter_keywords:
+            if keyword in col.lower():
+                matched_columns.append(col)
+                break
+
     col1, col2 = st.columns(2)
 
-    for i, col in enumerate(df.columns):
+    for i, col in enumerate(matched_columns):
         with (col1 if i % 2 == 0 else col2):
             unique_vals = df[col].dropna().unique().tolist()
             selected_vals = st.multiselect(f"{col}", options=unique_vals)
@@ -39,7 +50,7 @@ if uploaded_file:
     csv_bytes = convert_df(filtered_df)
 
     st.download_button(
-        label="📥 Download Filtered CSV",
+        label="📅 Download Filtered CSV",
         data=csv_bytes,
         file_name="filtered_report.csv",
         mime="text/csv"
