@@ -14,6 +14,7 @@ if uploaded_file:
 
     st.subheader("📋 Available Filters")
     filters = {}
+    range_filters = {}
 
     # Define target keywords to match
     filter_keywords = ["wallet", "asset", "categorisation", "operation", "type"]
@@ -35,10 +36,27 @@ if uploaded_file:
             if selected_vals:
                 filters[col] = selected_vals
 
+    # Range filters for numeric columns
+    numeric_columns = ["assetvalueInBaseCurrency", "assetAmount"]
+    for col in numeric_columns:
+        if col in df.columns:
+            min_val, max_val = float(df[col].min()), float(df[col].max())
+            st.subheader(f"📈 Range Filter: {col}")
+            range_min, range_max = st.slider(
+                f"Select range for {col}",
+                min_value=min_val,
+                max_value=max_val,
+                value=(min_val, max_val)
+            )
+            range_filters[col] = (range_min, range_max)
+
     # Apply filters
     filtered_df = df.copy()
     for col, selected_vals in filters.items():
         filtered_df = filtered_df[filtered_df[col].isin(selected_vals)]
+
+    for col, (min_val, max_val) in range_filters.items():
+        filtered_df = filtered_df[(filtered_df[col] >= min_val) & (filtered_df[col] <= max_val)]
 
     st.subheader("🔍 Filtered Results")
     st.dataframe(filtered_df, use_container_width=True)
