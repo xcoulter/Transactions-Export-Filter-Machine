@@ -14,7 +14,20 @@ pages = {
 }
 selected_page = st.radio("Navigation", list(pages.keys()), horizontal=True)
 
-if selected_page == "Report Filtering":
+if selected_page == "Home":
+    st.markdown("""
+    Welcome to the **Transactions Report Analyser**.
+
+    This app helps you quickly analyze and work with your transaction reports by:
+    - Uploading and previewing CSV files
+    - Filtering by wallet, asset, operation type, and more
+    - Narrowing down transactions by value range
+    - Exporting refined datasets for reporting or auditing
+
+    Use the navigation bar above to explore available features.
+    """)
+
+elif selected_page == "Report Filtering":
     # Upload CSV
     uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 
