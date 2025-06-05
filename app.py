@@ -36,19 +36,21 @@ if uploaded_file:
             if selected_vals:
                 filters[col] = selected_vals
 
-    # Range filters for numeric columns
-    numeric_columns = ["assetvalueInBaseCurrency", "assetAmount"]
-    for col in numeric_columns:
-        if col in df.columns:
-            min_val, max_val = float(df[col].min()), float(df[col].max())
-            st.subheader(f"📈 Range Filter: {col}")
-            range_min, range_max = st.slider(
-                f"Select range for {col}",
-                min_value=min_val,
-                max_value=max_val,
-                value=(min_val, max_val)
-            )
-            range_filters[col] = (range_min, range_max)
+            # Embed range sliders in expanders for numeric columns
+            if col in ["assetvalueInBaseCurrency", "assetAmount"]:
+                try:
+                    min_val, max_val = float(df[col].min()), float(df[col].max())
+                    with st.expander(f"Set range for {col}"):
+                        range_min, range_max = st.slider(
+                            f"Select range for {col}",
+                            min_value=min_val,
+                            max_value=max_val,
+                            value=(min_val, max_val),
+                            key=f"slider_{col}"
+                        )
+                        range_filters[col] = (range_min, range_max)
+                except:
+                    st.warning(f"Column {col} contains non-numeric values and cannot be filtered by range.")
 
     # Apply filters
     filtered_df = df.copy()
